@@ -1,97 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AMNS Hazira - Secure Lock</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AMNS Hazira - Door Lock System</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f4f4f4;
+      font-family: "Segoe UI", sans-serif;
+      background: #f5f7fa;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      padding: 20px;
+      min-height: 100vh;
     }
     .card {
-      background: white;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
       max-width: 400px;
+      width: 100%;
       text-align: center;
     }
     .logo {
-      width: 80%;
-      border-radius: 10px;
+      max-width: 80%;
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+    h2 {
+      margin-bottom: 10px;
+      font-size: 24px;
     }
     input[type="password"] {
+      padding: 12px;
       width: 80%;
-      padding: 10px;
-      font-size: 18px;
-      margin: 15px 0;
+      font-size: 16px;
       border-radius: 8px;
       border: 1px solid #ccc;
-      text-align: center;
+      margin: 10px 0;
     }
     button {
       padding: 10px 20px;
       font-size: 16px;
-      margin: 10px;
+      margin: 10px 5px;
       border: none;
       border-radius: 8px;
+      background-color: #e63946;
+      color: #fff;
       cursor: pointer;
+    }
+    button:hover {
+      background-color: #d62839;
     }
     #status {
       margin-top: 10px;
-      color: red;
+      color: #e63946;
       font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <img src="amns_logo.jpg" alt="AMNS Logo" class="logo">
+    <img src="amns_logo.jpg" alt="AMNS Logo" class="logo"/>
     <h2>Welcome to AMNS Hazira</h2>
     <p>Secure Door Lock System</p>
-    <input type="password" id="password" placeholder="Enter Password">
+
+    <input type="password" id="password" placeholder="Enter Password"/>
+    <br/>
     <button onclick="verifyPassword()">Submit</button>
+
     <div id="fingerprintSection" style="display:none">
+      <button onclick="registerFingerprint()">Register Fingerprint</button>
       <button onclick="scanFingerprint()">Scan Fingerprint to Unlock</button>
     </div>
+
     <p id="status"></p>
   </div>
 
   <script>
-    const correctPassword = "1234"; // change this if needed
-    const deviceIP = "http://192.168.1.105"; // change this to your ESP IP
+    const correctPassword = "1234"; // Change as needed
+    const espIP = "http://192.168.1.105"; // ESP8266 local IP
 
     function verifyPassword() {
-      const entered = document.getElementById('password').value;
-      if (entered === correctPassword) {
-        document.getElementById('status').textContent = "Password correct. Please scan fingerprint.";
-        document.getElementById('fingerprintSection').style.display = 'block';
+      const input = document.getElementById("password").value;
+      if (input === correctPassword) {
+        document.getElementById("status").textContent = "Password correct. Please register fingerprint.";
+        document.getElementById("fingerprintSection").style.display = "block";
       } else {
-        document.getElementById('status').textContent = "Incorrect password.";
+        document.getElementById("status").textContent = "Incorrect password.";
+        document.getElementById("fingerprintSection").style.display = "none";
+      }
+    }
+
+    async function registerFingerprint() {
+      try {
+        const publicKey = {
+          challenge: new Uint8Array(32),
+          rp: { name: "AMNS Door Lock" },
+          user: {
+            id: new Uint8Array(16),
+            name: "devanshi@amns.com",
+            displayName: "Devanshi Jethwa"
+          },
+          pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+          timeout: 60000,
+          authenticatorSelection: {
+            authenticatorAttachment: "platform",
+            userVerification: "required"
+          },
+          attestation: "none"
+        };
+
+        await navigator.credentials.create({ publicKey });
+        document.getElementById("status").textContent = "Fingerprint registered. Now scan to unlock.";
+      } catch (err) {
+        document.getElementById("status").textContent = "Registration failed: " + err.message;
       }
     }
 
     async function scanFingerprint() {
-      document.getElementById('status').textContent = "Waiting for fingerprint...";
+      document.getElementById("status").textContent = "Waiting for fingerprint...";
       try {
-        const credential = await navigator.credentials.get({
+        const assertion = await navigator.credentials.get({
           publicKey: {
             challenge: new Uint8Array(32),
             timeout: 60000,
             userVerification: "required"
           }
         });
-        document.getElementById('status').textContent = "Fingerprint matched. Unlocking...";
-        const res = await fetch(`${deviceIP}/unlock`);
-        const txt = await res.text();
-        document.getElementById('status').textContent = txt;
+
+        document.getElementById("status").textContent = "Fingerprint matched. Unlocking...";
+
+        const res = await fetch(`${espIP}/unlock`);
+        const msg = await res.text();
+        document.getElementById("status").textContent = msg || "Door unlocked.";
       } catch (e) {
-        document.getElementById('status').textContent = "Fingerprint failed or cancelled.";
+        document.getElementById("status").textContent = "Fingerprint failed or canceled.";
       }
     }
   </script>
