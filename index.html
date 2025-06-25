@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
-      background: #f5f7fa;
+      background: #f2f2f2;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -25,7 +25,6 @@
     .logo {
       max-width: 80%;
       margin-bottom: 20px;
-      border-radius: 8px;
     }
     h2 {
       margin-bottom: 10px;
@@ -78,8 +77,10 @@
   </div>
 
   <script>
-    const correctPassword = "1234"; // Change as needed
-    const espIP = "http://192.168.1.105"; // ESP8266 local IP
+    const correctPassword = "1234"; // Default password
+    const espIP = "http://192.168.1.105"; // Update to your ESP8266 IP
+
+    const userId = Uint8Array.from('devanshi@amns.com', c => c.charCodeAt(0)); // consistent ID
 
     function verifyPassword() {
       const input = document.getElementById("password").value;
@@ -98,7 +99,7 @@
           challenge: new Uint8Array(32),
           rp: { name: "AMNS Door Lock" },
           user: {
-            id: new Uint8Array(16),
+            id: userId,
             name: "devanshi@amns.com",
             displayName: "Devanshi Jethwa"
           },
@@ -112,7 +113,7 @@
         };
 
         await navigator.credentials.create({ publicKey });
-        document.getElementById("status").textContent = "Fingerprint registered. Now scan to unlock.";
+        document.getElementById("status").textContent = "Fingerprint registered successfully. Now scan to unlock.";
       } catch (err) {
         document.getElementById("status").textContent = "Registration failed: " + err.message;
       }
@@ -125,7 +126,11 @@
           publicKey: {
             challenge: new Uint8Array(32),
             timeout: 60000,
-            userVerification: "required"
+            userVerification: "required",
+            allowCredentials: [{
+              type: "public-key",
+              id: userId
+            }]
           }
         });
 
