@@ -3,146 +3,134 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AM/NS India Smart Lock</title>
-  <link rel="icon" href="AMNS-New-e1703878483400-1.jpg" />
+  <title>Secure Door Lock | AM/NS Hazira</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f5f5f5;
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
     .container {
-      text-align: center;
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
-      max-width: 400px;
+      background-color: white;
+      padding: 40px 20px;
+      border-radius: 20px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
       width: 90%;
+      max-width: 400px;
+      text-align: center;
     }
     img {
-      width: 150px;
-      margin-bottom: 15px;
+      max-width: 120px;
+      margin-bottom: 20px;
     }
-    input {
-      padding: 10px;
-      font-size: 18px;
-      width: 80%;
-      margin: 10px auto;
-      display: block;
-      border-radius: 5px;
+    h2 {
+      margin-bottom: 10px;
+    }
+    input[type="password"] {
+      padding: 12px;
+      width: 100%;
+      margin-bottom: 10px;
+      border-radius: 10px;
       border: 1px solid #ccc;
+      font-size: 16px;
     }
     button {
-      padding: 10px 20px;
-      margin: 10px;
+      padding: 12px;
+      width: 100%;
+      margin: 8px 0;
       border: none;
-      border-radius: 5px;
-      background-color: #d62828;
-      color: white;
+      border-radius: 10px;
       font-size: 16px;
       cursor: pointer;
+      background-color: #b80000;
+      color: white;
     }
-    .status {
-      color: #d62828;
+    #message {
       margin-top: 10px;
+      color: red;
       font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <img src="AMNS-New-e1703878483400-1.jpg" alt="AMNS Logo"/>
+    <img src="AMNS-New-e1703878483400-1.jpg" alt="AMNS Logo" />
     <h2>Welcome to AMNS Hazira</h2>
     <p>Secure Door Lock System</p>
     
-    <input type="password" id="password" placeholder="Enter Password"/>
-    <button onclick="validatePassword()">Submit</button>
+    <input type="password" id="password" placeholder="Enter password" />
+    <button onclick="checkPassword()">Submit</button>
     
     <button onclick="registerFingerprint()">Register Fingerprint</button>
-    <button onclick="unlockWithFingerprint()">Scan Fingerprint to Unlock</button>
-    
-    <div class="status" id="status"></div>
+    <button onclick="authenticateFingerprint()">Scan Fingerprint to Unlock</button>
+
+    <div id="message"></div>
   </div>
 
   <script>
-    const passwordSet = "1234"; // Default password
+    const correctPassword = "1234"; // change this as needed
 
-    function validatePassword() {
-      const pass = document.getElementById('password').value;
-      const status = document.getElementById('status');
-      if (pass === passwordSet) {
-        status.textContent = "Password correct. You may scan fingerprint to unlock.";
-        status.style.color = "green";
+    function checkPassword() {
+      const entered = document.getElementById("password").value;
+      const message = document.getElementById("message");
+      if (entered === correctPassword) {
+        message.style.color = "green";
+        message.innerText = "Password correct. Door unlocked!";
       } else {
-        status.textContent = "Incorrect password!";
-        status.style.color = "red";
+        message.style.color = "red";
+        message.innerText = "Incorrect password. Access denied.";
       }
     }
 
     async function registerFingerprint() {
-      const status = document.getElementById('status');
-      status.textContent = "Registering fingerprint...";
+      const publicKey = {
+        challenge: new Uint8Array(32),
+        rp: {
+          name: "AMNS Hazira",
+          id: "devanshijethwa0508.github.io"
+        },
+        user: {
+          id: new Uint8Array(16),
+          name: "user@example.com",
+          displayName: "AMNS User"
+        },
+        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          userVerification: "required"
+        },
+        timeout: 60000,
+        attestation: "none"
+      };
+
       try {
-        const credential = await navigator.credentials.create({
-          publicKey: {
-            challenge: new Uint8Array(32),
-            rp: { name: "AMNS Hazira" },
-            user: {
-              id: new Uint8Array(16),
-              name: "user@example.com",
-              displayName: "User"
-            },
-            pubKeyCredParams: [{ type: "public-key", alg: -7 }],
-            authenticatorSelection: {
-              authenticatorAttachment: "platform",
-              userVerification: "required"
-            },
-            timeout: 60000,
-            attestation: "none"
-          }
-        });
-        localStorage.setItem("credentialId", btoa(String.fromCharCode(...new Uint8Array(credential.rawId))));
-        status.textContent = "Fingerprint registered successfully. Now scan to unlock.";
-        status.style.color = "green";
+        await navigator.credentials.create({ publicKey });
+        document.getElementById("message").style.color = "green";
+        document.getElementById("message").innerText = "Fingerprint registered successfully. Now scan to unlock.";
       } catch (err) {
-        console.error(err);
-        status.textContent = "Fingerprint registration failed.";
-        status.style.color = "red";
+        document.getElementById("message").style.color = "red";
+        document.getElementById("message").innerText = "Registration failed: " + err.message;
       }
     }
 
-    async function unlockWithFingerprint() {
-      const status = document.getElementById('status');
-      status.textContent = "Waiting for fingerprint...";
-      const rawIdBase64 = localStorage.getItem("credentialId");
-      if (!rawIdBase64) {
-        status.textContent = "No fingerprint registered!";
-        return;
-      }
-      const rawId = Uint8Array.from(atob(rawIdBase64), c => c.charCodeAt(0));
+    async function authenticateFingerprint() {
+      const publicKey = {
+        challenge: new Uint8Array(32),
+        timeout: 60000,
+        userVerification: "required"
+      };
+
       try {
-        const assertion = await navigator.credentials.get({
-          publicKey: {
-            challenge: new Uint8Array(32),
-            allowCredentials: [{
-              type: "public-key",
-              id: rawId,
-              transports: ["internal"]
-            }],
-            timeout: 60000,
-            userVerification: "required"
-          }
-        });
-        status.textContent = "Fingerprint matched! Door Unlocked.";
-        status.style.color = "green";
+        await navigator.credentials.get({ publicKey });
+        document.getElementById("message").style.color = "green";
+        document.getElementById("message").innerText = "Fingerprint matched. Door unlocked!";
       } catch (err) {
-        console.error(err);
-        status.textContent = "Fingerprint does not match or cancelled!";
-        status.style.color = "red";
+        document.getElementById("message").style.color = "red";
+        document.getElementById("message").innerText = "Authentication failed: " + err.message;
       }
     }
   </script>
